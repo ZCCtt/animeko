@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import me.him188.ani.app.data.models.bangumi.BangumiSyncState
 import me.him188.ani.app.data.models.preference.MyCollectionsSettings
 import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
@@ -75,7 +76,13 @@ class UserCollectionsViewModel : AbstractViewModel(), KoinComponent {
         createEditableSubjectCollectionTypeState = { createEditableSubjectCollectionTypeState(it) },
         onPagerFetchingAnyRemoteSource = { enable ->
             if (!enable) {
-                fullSyncTasker.cancel()
+                backgroundScope.launch {
+                    try {
+                        fullSyncTasker.cancelAndJoin()
+                    } finally {
+                        fullSyncState.emit(BangumiSyncState.Finished(0, null))
+                    }
+                }
                 return@UserCollectionsState
             }
 
